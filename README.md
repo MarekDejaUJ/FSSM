@@ -37,7 +37,7 @@ FSSM moves beyond simple "significance" to test four specific logical structures
 ``` r
 # Install development version from GitHub
 if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
-devtools::install_github("marekdeja/fssm")
+devtools::install_github("MarekDejaUJ/FSSM")
 ```
 
 ------------------------------------------------------------------------
