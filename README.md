@@ -1,216 +1,221 @@
 # FSSM: Fuzzy Subjective Structure Model
 
-[![R Package](https://img.shields.io/badge/R%20Package-0.1.0-blue.svg)](https://github.com/marekdeja/fssm)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Here is the full content for your `README.md` file. You can copy this code block and save it directly as `README.md` in your package root directory.
+
+# FSSM: Fuzzy Subjective Structure Model
+
+[![R Package](https://img.shields.io/badge/R%20Package-0.2.0-blue.svg)](https://github.com/marekdeja/fssm) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Lifecycle: Experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 
 ## Overview
 
-**FSSM** (Fuzzy Subjective Structure Model) is an R package implementing a hybrid causal procedure for analyzing information behaviour in academic settings. It integrates:
+**FSSM** (Fuzzy Subjective Structure Model) is an R package implementing a hybrid causal procedure designed for information behaviour research and social sciences. It bridges the gap between **structural equation modeling (SEM)** and **necessary condition analysis (NCA)** by introducing fuzzy logic and propensity score weighting.
 
-- **PLS-SEM** sufficiency paths (what usually works)
-- **NCA** necessity bottlenecks (what constrains action)
-- **cIPMA** decision-oriented visualization
-- **Entropy weighting** for subjective measurement
-- **GPS/IPW weighting** for causal balance
+FSSM allows researchers to answer questions that standard regression misses: \* *"Is X necessary for Y, or just helpful?"* \* *"Does X trigger Y deterministically, or just increase its probability?"* \* *"How does the causal effect change as X increases (Dose-Response)?"*
 
-The package formalizes four distinct, non-deterministic causal claims:
+### Key Features
 
-| Claim | Formula | Interpretation |
-|-------|---------|----------------|
-| **Typical Sufficiency** | α̃ ≥ 0.85 | "If X, then typically Y" |
-| **Typical Necessity** | ε̃ ≤ 0.05 | "If not X, then typically not Y" |
-| **Probabilistic Sufficiency** | Δ̃ ≥ 0.15 | "If X, then probably Y" (uplift) |
-| **Probabilistic Necessity** | β̃ ≤ 0.20 | "If not X, then probably not Y" |
+-   **Dual Entry Routes:** Works with **PLS-SEM models** (via `seminr`) OR **Raw Data** (via entropy/MCDM weighting).
+-   **Causal Balancing:** Implements **Generalized Propensity Scores (GPS)** for continuous treatments and **Binary IPW** for threshold-based analysis.
+-   **Augmented cIPMA:** Extends the Importance-Performance Map with necessity bottlenecks and causal uplift.
+-   **Fuzzy Logic:** Formalizes four distinct causal claims (Typical/Probabilistic Sufficiency & Necessity).
+
+## The Four Causal Claims
+
+FSSM moves beyond simple "significance" to test four specific logical structures:
+
+| Claim | Estimand | Formula | Interpretation |
+|-----------------|:---------------:|:---------------:|-----------------------|
+| **Typical Sufficiency** | $\alpha$ | $\tilde{\alpha} \ge 0.85$ | *"If X is high, Y is **typically** high."* (Consistency) |
+| **Typical Necessity** | $\epsilon$ | $\tilde{\epsilon} \le 0.05$ | *"If Y is high, X is **rarely** low."* (Exception Rate) |
+| **Probabilistic Sufficiency** | $\Delta$ | $\tilde{\Delta} \ge 0.15$ | *"Increasing X **raises the probability** of high Y."* (Causal Uplift) |
+| **Probabilistic Necessity** | $\beta$ | $\tilde{\beta} \le 0.20$ | *"If X is low, high Y is **unlikely**."* (Constraint Strength) |
+
+------------------------------------------------------------------------
 
 ## Installation
 
-```r
-# Install from GitHub (when available)
-# devtools::install_github("marekdeja/fssm")
-
-# Or install from local source
-install.packages("path/to/fssm", repos = NULL, type = "source")
+``` r
+# Install development version from GitHub
+if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+devtools::install_github("marekdeja/fssm")
 ```
 
-## Dependencies
+------------------------------------------------------------------------
 
-- `seminr` (>= 2.3.0) for PLS-SEM modeling
-- `NCA` (>= 4.0.0) for Necessary Condition Analysis
-- `ggplot2` (>= 3.4.0) for visualization
-- `ggrepel` (>= 0.9.0) for label positioning
+## Quick Start: The Two Routes
 
-## Quick Start
+FSSM supports two workflows. Choose the one that fits your data availability.
 
-```r
+### Route A: The PLS-SEM Route (Recommended)
+
+Use this if you have a latent variable model defined in `seminr`. FSSM uses the model's outer weights and data.
+
+``` r
 library(fssm)
 library(seminr)
 
-# 1. Run your PLS-SEM model with seminr (bootstrapped)
-boot_model <- bootstrap_model(
-  seminr_model = pls_model,
-  nboot = 5000
-)
-
-# 2. Define theoretical scale bounds
+# 1. Load data and define scales (Theoretical Min/Max)
+data("tam_data")
 scales <- list(
-  "IL1" = c(1, 7),  # 7-point Likert
-  "IC1" = c(1, 7),
-  "IE1" = c(1, 7)
+  "PU_01" = c(1, 5), "PU_02" = c(1, 5), "PU_03" = c(1, 5),
+  "USE_01" = c(1, 7) # ... define for all items
 )
 
-# 3. Run FSSM analysis
-fssm_results <- fssm(
-  model = boot_model,
-  target_construct = "Empowerment",
-  data = survey_data,
+# 2. Estimate and Bootstrap PLS Model
+# (Assuming 'model' is your bootstrapped seminr object)
+# boot_model <- bootstrap_model(model, nboot = 1000)
+
+# 3. Run FSSM with GPS Weighting
+result <- fssm(
+  input = boot_model,
+  target_construct = "Technology_Use",
+  data = tam_data,
   scales = scales,
   target_level = 85,
-  confounders = c("discipline", "gender", "seniority"),
-  weighting = "gps"  # or "binary" for traditional IPW
+  confounders = c("Age", "Gender"), # Adjusts for confounding
+  weighting = "gps"
 )
 
-# 4. View results
-print(fssm_results)
-summary(fssm_results)
-
-# 5. Visualize
-plot(fssm_results)
-plot(fssm_results, claim = "alpha", y_axis = "beta")
-plot_dose_response(fssm_results)
-plot_claims_comparison(fssm_results)
-
-# 6. Check diagnostics
-check_assumptions.fssm(fssm_results)
+# 4. View Results
+print(result)
 ```
 
-## Key Functions
+### Route B: The Raw Data / Entropy Route
 
-### Main Analysis
-- `fssm()` - Run complete FSSM analysis
-- `print.fssm()` - Display summary results
-- `summary.fssm()` - Detailed statistics
-- `extract_fssm()` - Extract specific components
+Use this if you want to create composite scores directly from raw data using **Entropy Weighting** (Shannon's Entropy), which weights items based on their information content rather than loading strength.
 
-### Membership Functions
-- `calculate_fuzzy_membership()` - Compute μ_X^S, μ_X^N, μ_Y
-- `summarize_membership()` - Membership distribution statistics
-- `get_case_profiles()` - Case-level membership details
+``` r
+# 1. Define Syntax (Lavaan style)
+syntax <- "
+  Perceived_Usefulness =~ PU_01 + PU_02 + PU_03;
+  Technology_Use =~ USE_01
+"
 
-### Weighting
-- `calculate_gps_weights()` - Generalized Propensity Score weights
-- `calculate_binary_ipw_weights()` - Traditional binary IPW
-- `check_gps_diagnostics()` - Weighting quality assessment
+# 2. Extract and Weight Data (Entropy Method)
+fssm_data <- fssm_extract(
+  input = tam_data,
+  syntax = syntax,
+  scales = scales,
+  indicator_weighting = "entropy" # or "equal"
+)
 
-### Causal Claims
-- `calculate_crisp_claims()` - Binary threshold formulations
-- `calculate_fuzzy_claims()` - Continuous membership formulations
-- `estimate_dose_response()` - Full sufficiency-outcome curve
-- `bootstrap_claims()` - Confidence intervals via bootstrap
-- `assess_claim_support()` - Decision support assessment
+# 3. Run FSSM
+result_raw <- fssm(
+  input = fssm_data,
+  target_construct = "Technology_Use",
+  target_level = 85,
+  confounders = c("Age", "Gender"),
+  weighting = "gps"
+)
 
-### Visualization
-- `plot.fssm()` - Enhanced importance-performance map
-- `plot_dose_response()` - Sufficiency-outcome relationship
-- `plot_claims_comparison()` - Heatmap/bar of four claims
-- `plot_membership()` - Membership distribution plots
+print(result_raw)
+```
 
-### Diagnostics
-- `check_assumptions.fssm()` - PLS-SEM and weighting diagnostics
+------------------------------------------------------------------------
+
+## Visualization
+
+FSSM includes a comprehensive plotting suite using `ggplot2`.
+
+### 1. Summary Dashboard
+
+The easiest way to see everything at once: IPMA, Heatmap, Dose-Response, and Bottlenecks.
+
+``` r
+plot_dashboard(result)
+```
+
+### 2. Augmented IPMA
+
+Visualizes Importance vs. Performance, colored by Necessity status.
+
+``` r
+# Standard IPMA
+plot(result, x_axis = "importance", y_axis = "performance", color_by = "necessity")
+
+# Causal Strategy Map (Uplift vs. Consistency)
+plot(result, x_axis = "delta", y_axis = "alpha", bubble_size = "performance")
+```
+
+### 3. Dose-Response Curves
+
+Shows the causal "uplift": how the probability of the outcome changes as membership in X increases.
+
+``` r
+plot_dose_response(result)
+```
+
+------------------------------------------------------------------------
 
 ## Methodological Workflow
 
-```
+```         
 ┌─────────────────────────────────────────────────────────────────┐
-│                     FSSM WORKFLOW                               │
+│                       FSSM WORKFLOW                             │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  Step 1: Entropy-weighted latent scores                         │
-│          └─> X*_i, Y*_i ∈ [0, 100]                              │
-│                                                                 │
-│  Step 2: NCA bottleneck estimation (unweighted)                 │
-│          └─> T_X = b_X(T_Y), bottleneck function                │
-│                                                                 │
-│  Step 3: Fuzzy membership (BEFORE weighting)                    │
-│          └─> μ_X^S(i), μ_X^N(i), μ_Y(i) ∈ [0, 1]                │
-│                                                                 │
-│  Step 4: GPS weighting on continuous μ_X^S                      │
-│          └─> Stabilized weights w_i                             │
-│                                                                 │
-│  Step 5: Dose-response estimation                               │
-│          └─> E[μ_Y | μ_X^S = m] for m ∈ [0, 1]                  │
-│                                                                 │
-│  Step 6: Four causal claims (fuzzy formulations)                │
-│          └─> α̃, ε̃, Δ̃, β̃ + violation mass + disc. power          │
-│                                                                 │
-│  Step 7: Crisp claims (optional comparison)                     │
-│          └─> α̂, ε̂, Δ̂, β̂                                         │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+│  Route A: PLS-SEM Weights   │   Route B: Entropy/Equal Weights  │
+│  (bootstrapped model)       │   (raw data extraction)           │
+└───────────────┬─────────────┴──────────────┬────────────────────┘
+                │                            │
+                ▼                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 1: Rescaling & Standardization (0-100 Theoretical Range)  │
+├─────────────────────────────────────────────────────────────────┤
+│  Step 2: NCA Bottleneck Calculation (Ceiling Lines)             │
+│          └─> Defines Thresholds T_X for fuzzy membership        │
+├─────────────────────────────────────────────────────────────────┤
+│  Step 3: Causal Balancing (Weighting)                           │
+│          └─> GPS (Continuous) or Binary IPW based on Covariates │
+├─────────────────────────────────────────────────────────────────┤
+│  Step 4: Fuzzy Logic Causal Claims                              │
+│          └─> Calculate α, ε, Δ, β using weighted aggregation    │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+                     ┌──────────────────────┐
+                     │  Strategic Output    │
+                     │  - Dashboard Plots   │
+                     │  - Diagnostic Tables │
+                     │  - Logic Checks      │
+                     └──────────────────────┘
 ```
 
 ## Key Difference: GPS vs Binary IPW
 
-| Aspect | Binary IPW | GPS (Recommended) |
-|--------|-----------|-------------------|
-| Treatment | Dichotomized: T = 1{X ≥ T_X} | Continuous: μ_X^S ∈ [0,1] |
-| Information | Lost (71 = 100 if both ≥ T_X) | Preserved (0.03 ≠ 1.0) |
-| Output | Two-point comparison | Full dose-response curve |
-| Balance | At threshold only | Across entire distribution |
+| Aspect      | Binary IPW               | GPS (Recommended)          |
+|-------------|--------------------------|----------------------------|
+| Treatment   | Dichotomized:            | Continuous:                |
+| Information | Lost (71 = 100 if both ) | Preserved (0.03 1.0)       |
+| Output      | Two-point comparison     | Full dose-response curve   |
+| Balance     | At threshold only        | Across entire distribution |
 
-## Interpretation Guide
+## Diagnostics
 
-### When to use which claim:
+FSSM assumes that your measurement model and weighting model are valid. Check them easily:
 
-- **Typical Sufficiency (α̃)**: "Is the condition generally associated with success?"
-  - High α̃: When X is present, Y typically occurs
-  - Use for identifying enablers
-
-- **Typical Necessity (ε̃)**: "Is the condition required for success?"
-  - Low ε̃: High Y rarely occurs without sufficient X
-  - Use for identifying gatekeepers/constraints
-
-- **Probabilistic Sufficiency (Δ̃)**: "How much does X increase the probability of Y?"
-  - High Δ̃: X meaningfully increases likelihood of Y
-  - Use for effect size interpretation
-
-- **Probabilistic Necessity (β̃)**: "What happens when X is absent?"
-  - Low β̃: Without X, Y is unlikely
-  - Use for risk assessment
-
-### Construct Classification:
-
-| α̃ | ε̃ | Classification |
-|---|---|----------------|
-| High | Low | **Strong Enabler & Gatekeeper** |
-| High | High | Enabler (not necessary) |
-| Low | Low | Gatekeeper (necessary but not sufficient) |
-| Low | High | Weak or unclear relationship |
+``` r
+# Check PLS assumptions (Reliability, HTMT, VIF) and Weighting (ESS)
+check_assumptions(result)
+```
 
 ## Citation
 
 If you use FSSM in your research, please cite:
 
-```bibtex
+``` bibtex
 @article{deja2026fssm,
   title={Fuzzy Subjective Structure Model: A Hybrid Causal Procedure for Information Behaviour Research},
   author={Deja, Marek},
   journal={Proceedings of ISIC 2026},
-  year={2026}
+  year={2026},
+  note={R package version 0.2.0},
+  url={[https://github.com/marekdeja/fssm](https://github.com/marekdeja/fssm)}
 }
 ```
 
-## Further Development
-
-The FSSM project is actively developed. Follow updates at:
-- OSF: https://osf.io/b8maq/
-- GitHub: https://github.com/marekdeja/fssm
-
-## License
-
-MIT License - see LICENSE file for details.
-
 ## Author
 
-**Marek Deja**  
-Associate Professor, Jagiellonian University, Kraków, Poland  
-Email: marek.deja@uj.edu.pl
+**Marek Deja** Assistant Professor, Jagiellonian University, Kraków, Poland
+
+Email: [marek.deja\@uj.edu.pl](mailto:marek.deja@uj.edu.pl)
+
