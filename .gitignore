@@ -2,3 +2,14 @@
 .Rhistory
 .RData
 .Ruserdata
+.DS_Store
+src/*.o
+src/*.so
+*.o
+*.so
+*.rds
+inst/doc
+vignettes/*.html
+vignettes/*.pdf
+tam.csv
+data-raw/

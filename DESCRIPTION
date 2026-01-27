@@ -1,16 +1,42 @@
-Package: fssmr
+Package: fssm
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Authors@R: c(
-    person(
-      "Jane", "Doe",
-      email = "jane@example.com",
-      role = c("aut", "cre")
-    )
-  )
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
-License: What license is it under?
+Title: Fuzzy Subjective Structure Model for Causal Inference in Information Behaviour Research
+Version: 0.2.0
+Date: 2026-01-27
+Authors@R: 
+    person("Marek", "Deja", 
+           email = "marek.deja@uj.edu.pl", 
+           role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Implements the Fuzzy Subjective Structure Model (FSSM), a hybrid 
+    causal procedure for analyzing information behaviour in academic settings. 
+    FSSM integrates PLS-SEM sufficiency paths, NCA necessity bottlenecks, and 
+    cIPMA visualization with entropy weighting for subjective measurement and 
+    generalized propensity score (GPS) weighting for causal balance. The package 
+    formalizes four distinct causal claims, typical sufficiency, typical necessity, 
+    probabilistic sufficiency, and probabilistic necessity. It supports both crisp 
+    (binary threshold) and fuzzy (continuous membership) formulations.
+License:  GPL-3
 Encoding: UTF-8
 LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends: 
+    R (>= 4.0.0)
+Imports:
+    ggplot2 (>= 3.4.0),
+    ggrepel (>= 0.9.0),
+    NCA (>= 4.0.0),
+    stats,
+    scales
+Suggests:
+    seminr (>= 2.3.0),
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+URL: https://github.com/marekdeja/fssm,
+     https://osf.io/b8maq/
+BugReports: https://github.com/marekdeja/fssm/issues
+Keywords: PLS-SEM, NCA, causal inference, fuzzy logic, information behaviour,
+    necessity condition, sufficiency, propensity scores
