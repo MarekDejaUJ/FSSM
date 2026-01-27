@@ -233,7 +233,6 @@ If you use FSSM in your research, please cite:
 @article{deja2026fssm,
   title={Fuzzy Subjective Structure Model: A Hybrid Causal Procedure for Information Behaviour Research},
   author={Deja, Marek},
-  journal={Proceedings of ISIC 2026},
   year={2026},
   note={R package version 0.2.0},
   url={[https://github.com/marekdeja/fssm](https://github.com/marekdeja/fssm)}
