@@ -122,6 +122,11 @@ plot.fssm <- function(x,
 
   df$X_var <- x_data$var
   x_label <- x_data$label
+  if (all(is.na(df$X_var))) {
+    warning("Selected x_axis has no available data. Falling back to 'performance'.")
+    df$X_var <- df$Performance
+    x_label <- "Performance (0-100)"
+  }
 
   # ============================================================================
   # Y-axis variable
@@ -157,6 +162,11 @@ plot.fssm <- function(x,
 
   df$Y_var <- y_data$var
   y_label <- y_data$label
+  if (all(is.na(df$Y_var))) {
+    warning("Selected y_axis has no available data. Falling back to 'performance'.")
+    df$Y_var <- df$Performance
+    y_label <- "Performance (0-100)"
+  }
 
   # ============================================================================
   # Bubble size
@@ -384,6 +394,13 @@ plot_dose_response <- function(x, constructs = NULL, show_points = TRUE, show_ci
   p <- ggplot2::ggplot(dr_data, ggplot2::aes(x = mu_S, y = E_mu_Y, color = Construct)) +
     ggplot2::geom_line(linewidth = 1.2)
 
+  if (show_ci && all(c("CI_lower", "CI_upper") %in% names(dr_data))) {
+    p <- p + ggplot2::geom_ribbon(
+      ggplot2::aes(ymin = CI_lower, ymax = CI_upper, fill = Construct),
+      alpha = 0.15, color = NA, inherit.aes = TRUE
+    )
+  }
+
   if (show_points) {
     p <- p + ggplot2::geom_point(data = key_points, size = 4)
   }
@@ -403,7 +420,8 @@ plot_dose_response <- function(x, constructs = NULL, show_points = TRUE, show_ci
       subtitle = "Shows causal effect of increasing sufficiency membership",
       x = expression("Sufficiency Membership " * (mu[S])),
       y = expression("Expected Outcome " * E * "[" * mu[Y] * "]"),
-      color = "Construct"
+      color = "Construct",
+      fill = if (show_ci) "Construct" else NULL
     ) +
     ggplot2::theme_minimal() +
     ggplot2::theme(
