@@ -56,28 +56,51 @@ library(seminr)
 
 # 1. Load data and define scales (Theoretical Min/Max)
 data("tam_data")
-scales <- list(
-  "PU_01" = c(1, 5), "PU_02" = c(1, 5), "PU_03" = c(1, 5),
-  "USE_01" = c(1, 7) # ... define for all items
+
+# Define scales (theoretical min/max for each indicator)
+my_scales <- list(
+  PU_01 = c(1, 5), PU_02 = c(1, 5), PU_03 = c(1, 5),
+  CO_01 = c(1, 5), CO_02 = c(1, 5), CO_03 = c(1, 5),
+  EOU_01 = c(1, 5), EOU_02 = c(1, 5), EOU_03 = c(1, 5),
+  EMV_01 = c(1, 5), EMV_02 = c(1, 5), EMV_03 = c(1, 5),
+  AD_01 = c(1, 5), AD_02 = c(1, 5), AD_03 = c(1, 5),
+  USE_01 = c(1, 7)
 )
 
 # 2. Estimate and Bootstrap PLS Model
-# (Assuming 'model' is your bootstrapped seminr object)
-# boot_model <- bootstrap_model(model, nboot = 1000)
+tam_mm <- constructs(
+  composite("Perceived_Usefulness", multi_items("PU_0", 1:3)),
+  composite("Compatibility",        multi_items("CO_0", 1:3)),
+  composite("Ease_of_Use",          multi_items("EOU_0", 1:3)),
+  composite("Emotional_Value",      multi_items("EMV_0", 1:3)),
+  composite("Adoption_Intention",   multi_items("AD_0", 1:3)),
+  composite("Technology_Use",       single_item("USE_01"))
+)
+
+tam_sm <- relationships(
+  paths(from = c("Compatibility", "Perceived_Usefulness", "Ease_of_Use", "Emotional_Value"),
+        to = "Adoption_Intention"),
+  paths(from = c("Adoption_Intention", "Compatibility", "Perceived_Usefulness",
+                 "Ease_of_Use", "Emotional_Value"),
+        to = "Technology_Use")
+)
+
+tam_pls <- estimate_pls(tam_data, tam_mm, tam_sm)
+boot_tam <- bootstrap_model(tam_pls, nboot = 500)
 
 # 3. Run FSSM with GPS Weighting
-result <- fssm(
+result_A <- fssm(
   input = boot_model,
   target_construct = "Technology_Use",
   data = tam_data,
-  scales = scales,
+  scales = my_scales,
   target_level = 85,
   confounders = c("Age", "Gender"), # Adjusts for confounding
   weighting = "gps"
 )
 
 # 4. View Results
-print(result)
+print(result_A)
 ```
 
 ### Route B: The Raw Data / Entropy Route
@@ -85,30 +108,34 @@ print(result)
 Use this if you want to create composite scores directly from raw data using **Entropy Weighting** (Shannon's Entropy), which weights items based on their information content rather than loading strength.
 
 ``` r
-# 1. Define Syntax (Lavaan style)
-syntax <- "
+# 1. Define syntax for raw data route (lavaan-style)
+fssm_syntax <- "
   Perceived_Usefulness =~ PU_01 + PU_02 + PU_03;
+  Compatibility =~ CO_01 + CO_02 + CO_03;
+  Ease_of_Use =~ EOU_01 + EOU_02 + EOU_03;
+  Emotional_Value =~ EMV_01 + EMV_02 + EMV_03;
+  Adoption_Intention =~ AD_01 + AD_02 + AD_03;
   Technology_Use =~ USE_01
 "
 
-# 2. Extract and Weight Data (Entropy Method)
-fssm_data <- fssm_extract(
+# 2. Extract scores using entropy weighting
+fssm_obj_entropy <- fssm_extract(
   input = tam_data,
-  syntax = syntax,
-  scales = scales,
-  indicator_weighting = "entropy" # or "equal"
+  syntax = fssm_syntax,
+  scales = my_scales,  # Optional: use theoretical rescaling
+  indicator_weighting = "entropy"
 )
 
 # 3. Run FSSM
-result_raw <- fssm(
-  input = fssm_data,
+result_B <- fssm(
+  input = fssm_obj_entropy,
   target_construct = "Technology_Use",
   target_level = 85,
   confounders = c("Age", "Gender"),
   weighting = "gps"
 )
 
-print(result_raw)
+print(result_B)
 ```
 
 ------------------------------------------------------------------------
