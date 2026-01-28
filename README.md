@@ -1,6 +1,3 @@
-# FSSM: Fuzzy Subjective Structure Model
-
-Here is the full content for your `README.md` file. You can copy this code block and save it directly as `README.md` in your package root directory.
 
 # FSSM: Fuzzy Subjective Structure Model
 
